@@ -75,9 +75,13 @@ def vectorise_uncert(f, x, std, seed=None, calibrated=True):
     if not seed: seed = np.int32(np.abs(y*1e4))
     else: seed = [seed]*n
     
-    for i, yi in enumerate(y):
-        mu[i,:] = generate_uncertainty(yi, std=std, seed=seed[i], calibrated=cal[i])
-        
+    shp_std = np.asarray(std).shape
+    if len(shp_std) < 1: std = np.array([[std]]*n) #Check if std is a scalar
+    elif len(shp_std) < 1: std = np.array(std).reshape(-1,1) #Check if std is a list or 1D array
+    
+    for i, (yi, sdi) in enumerate(zip(y, std)):
+        mu[i,:] = generate_uncertainty(yi, std=sdi, seed=seed[i], calibrated=cal[i])
+    
     return mu, std #This format is expected by psus and is the more general one
 
 #%% Test Functions
