@@ -6,7 +6,7 @@ Created on Mon Nov 10 15:08:15 2025
 """
 
 from pnm_surrogate import *
-from psus import psus
+from psus_vn import psus
 
 #%% Test the PNM surrogate functionality on random numbers
 f = -1 + 10*np.random.rand(50)
@@ -78,8 +78,9 @@ p0 = 0.1
 out_d = 'norm'
 inp_d = {'name': 'uniform', 'parameters':[0,1]}
 
-# %% Run 1 iter
 func = lambda x: vectorise_uncert(branin, x, std=2)
+
+# %% Run 1 iter
 p_F, info = psus(func, d, t_star, N, p0, out_d, inp_d);
     
 # %% Run multiple iter's
