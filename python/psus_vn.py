@@ -60,25 +60,26 @@ def sosd(name,loc_sc_1,loc_sc_2,n):
 
 
 def psort(name, pars, x, n):
-
-    pars = np.asarray(pars, dtype=float)
+    # pars = np.asarray(pars, dtype=float)
+    pars = np.concatenate(pars, axis=1)
     x    = np.asarray(x)
 
-    loc  = pars[:, 0]
-    scale = pars[:, 1]
+    # loc  = pars[:, 0]
+    # scale = pars[:, 1]
     dist = getattr(sts, name)
 
-    mn = dist.mean(loc=loc, scale=scale)
-    vr = dist.var(loc=loc, scale=scale)
+    mn = dist.mean(loc=pars[:, 0], scale=pars[:, 1])
+    sd = dist.std(loc=pars[:, 0], scale=pars[:, 1])
 
-    sd = np.sqrt(vr)
+    # sd = np.sqrt(vr)
     dist_mat = np.column_stack([mn, sd, pars])
     
-    u, unique_idx, rInd = np.unique(
-        dist_mat, axis=0, return_index=True, return_inverse=True)
-    idx_order = np.argsort(unique_idx)
-    distU = dist_mat[unique_idx[idx_order]]
-    rInd = idx_order[rInd]
+    # u, unique_idx, rInd = np.unique(dist_mat, axis=0,
+    #                                 return_index=True, return_inverse=True)
+    distU, rInd = np.unique(dist_mat, axis=0, return_inverse=True)
+    # idx_order = np.argsort(unique_idx)
+    # distU = dist_mat[unique_idx[idx_order]] #This is just np.sort(unique_idx)
+    # rInd = idx_order[rInd]
 
     mnU  = distU[:, 0]
     sdU  = distU[:, 1]
@@ -105,9 +106,9 @@ def psort(name, pars, x, n):
     xS   = x[sortOrd]
     parS = pars[sortOrd]
     mnS  = mn[sortOrd]
-    vrS  = vr[sortOrd]
+    sdS  = sd[sortOrd]
 
-    return xS, parS, mnS, vrS
+    return xS, parS, mnS, sdS
 
 
 def fillOut(out,L,x=None,pars=None,y=None,u=None,ind_F=None,ind_Fi=None,l=None,
