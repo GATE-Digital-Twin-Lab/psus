@@ -141,7 +141,7 @@ def fillOut(out,L,x=None,pars=None,y=None,u=None,ind_F=None,ind_Fi=None,l=None,
     return out
 
 def generate_out_funcs(out_dist): #These are loc-scale family only for now: legacy from initial version
-    out_dists = ['norm', 'uniform', 'logistic', 'laplace', 't'];
+    out_dists = ['norm', 'uniform', 'logistic', 'laplace', 't']
     
     if out_dist.lower() not in out_dists:
         raise(Exception('Unrecognized output distribution.'))
@@ -155,33 +155,33 @@ def generate_out_funcs(out_dist): #These are loc-scale family only for now: lega
 
 
 def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
+    
+    nS = int(np.ceil((nL - nC) / nC))  #Number of states per chain when keeping seeds 
+    s = np.std(seeds, axis=0, keepdims=True)  
+    s = np.repeat(s, seeds.shape[0], axis=0)
+    
+    original_propFunc = propFunc
+    propFunc = lambda x, k: original_propFunc(x, s[:, :, k])
 
-    nS = int(np.ceil((nL - nC) / nC))  
-
-    s = np.std(seeds[:, :, 0], axis=0)        
-    s = np.tile(s, (nC, 1))                     
-
-    prop = lambda x: propFunc(x, s)
-
-    pA = np.zeros((nS, d))
-
+    pA = np.zeros((nS, d)) #Initializing array for the probability of acceptance
+    
     for k in range(nS):
+        #Random walk
+        urand = np.random.rand(nC, d)  #Uniform numbers to check acceptance
         
-        urand = np.random.rand(nC, d)
+        pstar = propFunc(seeds[:, :, k],k)  #Step for random walk
 
-        pstar = prop(seeds[:, :, k])
-
-        r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])   
-        accept = urand < r[:, None]                       
-
-        pA[k, :] = np.mean(accept, axis=0)
-
-        zeta = seeds[:, :, k].copy()
-        zeta[accept] = pstar[accept]
-
+        r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])  #Uniform pdfs 
+        accept = urand < r  #Acceptance criterion                      
+        pA[k, :] = np.mean(accept, axis=0)  #Probability of acceptance
+        zeta = seeds[:, :, k].copy()  #Copy to zeta
+        zeta[accept] = pstar[accept]  #Replace the old samples with the accepted ones where appropriate
+        
+        #Domain acceptance
         par1[:, k+1] = par1[:, k]
         par2[:, k+1] = par2[:, k]
-
+        
+        #Evaluate the objective function at new points
         rows = np.any(accept, axis=1)
 
         if np.any(rows):
@@ -189,18 +189,19 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
             par1[rows, k+1] = p1_new
             par2[rows, k+1] = p2_new
 
-        seeds[:, :, k+1] = seeds[:, :, k]
+        seeds[:, :, k+1] = seeds[:, :, k]  #Populate the next state of the chain with the previous one by default
 
-        pInFi = excdFunc(np.column_stack([par1[:, k+1], par2[:, k+1]]), level)
+        pInFi = excdFunc(np.column_stack([par1[:, k+1], par2[:, k+1]]), level)  #Prob. y is in Fi
+        urandF = np.random.rand(nC, 1)  #Uniform RV's to check acceptance in F
+        inFi = urandF < pInFi 
 
-        urandF = np.random.rand(nC)
-        inFi = urandF < pInFi
-
-        seeds[inFi, :, k+1] = zeta[inFi, :]
-        par1[~inFi, k+1] = par1[~inFi, k]
-        par2[~inFi, k+1] = par2[~inFi, k]
+        mask = inFi[:, 0]
+        seeds[mask, :, k+1] = zeta[mask, :]  #Replace seeds that have passed with zeta...
+        par1[~mask, k+1] = par1[~mask, k]  #... replace parameter values too...
+        par2[~mask, k+1] = par2[~mask, k]  #...
 
     return seeds, par1, par2, pA
+  
 
 
 def varindepprod(mu,var):
@@ -213,12 +214,12 @@ def varindepprod(mu,var):
     
     n = len(mu); #Number of RV
     
-    if n == 1: varprod = var;
+    if n == 1: varprod = var
     elif n == 2:
-        varprod = np.prod(var) + var[0]*mu[1]**2 + var[1]*mu[0]**2;
+        varprod = np.prod(var) + var[0]*mu[1]**2 + var[1]*mu[0]**2
     else:
         v = varindepprod(mu[1:n-1], var[1:n-1]);
-        varprod = var[-1]*v + v*mu[-1]**2 + var[-1]*np.prod(mu[:-1]**2);
+        varprod = var[-1]*v + v*mu[-1]**2 + var[-1]*np.prod(mu[:-1]**2)
     
     return varprod
 
