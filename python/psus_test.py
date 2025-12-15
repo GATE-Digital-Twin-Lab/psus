@@ -455,8 +455,6 @@ def psus(func, d, t_star, n, p,
         p_F['var'] = varindepprod(mn_arr,vr_arr)/np.prod(n_gen_arr**2)
 
 
-
-
         # Maximal dependence
         C_list = [dict_out[l]['p_Ci']['C'] for l in range(L+1)]
         C_vec = np.array(C_list)
