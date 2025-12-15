@@ -45,8 +45,8 @@ for i, fi in enumerate(f):
     plt.show()
     
 #%% Test the PNM surrogate on the Branin function
-# x = np.random.rand(1000,2)
-# f = branin(x)
+x = np.random.rand(1000,2)
+f = branin(x)
 
 std = 2
 mu_cal = []
@@ -78,7 +78,7 @@ p0 = 0.1
 out_d = 'norm'
 inp_d = {'name': 'uniform', 'parameters':[0,1]}
 
-func = lambda x: vectorise_uncert(branin, x, std=2)
+func = lambda x: vectorise_uncertainty(branin, x, std=2)
 
 # %% Run 1 iter
 p_F, info = psus(func, d, t_star, N, p0, out_d, inp_d);
