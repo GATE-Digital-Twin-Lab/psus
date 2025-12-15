@@ -139,12 +139,26 @@ def generate_out_funcs(out_dist): #These are loc-scale family only for now: lega
 
 def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
     
+
+
+    if seeds.ndim == 2:
+        seeds = seeds[:, :, np.newaxis]   
+    if par1.ndim == 1:
+        par1 = par1[:, np.newaxis]
+    if par2.ndim == 1:
+        par2 = par2[:, np.newaxis]
+
+
+
     nS = int(np.ceil((nL - nC) / nC))  #Number of states per chain when keeping seeds 
-    s = np.std(seeds, axis=0, keepdims=True)  
+    s = np.std(seeds[:, :, 0], axis=0, keepdims=True)  
     s = np.repeat(s, seeds.shape[0], axis=0)
     
-    original_propFunc = propFunc
-    propFunc = lambda x, k: original_propFunc(x, s[:, :, k])
+    par1 = np.concatenate([par1, np.zeros((nC, nS))], axis=1)
+    par2 = np.concatenate([par2, np.zeros((nC, nS))], axis=1)
+    seeds = np.concatenate([seeds, np.zeros((nC, d, nS))], axis=2)
+
+    proposal = lambda x: propFunc(x, s)
 
     pA = np.zeros((nS, d)) #Initializing array for the probability of acceptance
     
@@ -152,7 +166,7 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
         #Random walk
         urand = np.random.rand(nC, d)  #Uniform numbers to check acceptance
         
-        pstar = propFunc(seeds[:, :, k],k)  #Step for random walk
+        pstar = proposal(seeds[:, :, k])  #Step for random walk
 
         r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])  #Uniform pdfs 
         accept = urand < r  #Acceptance criterion                      
@@ -174,7 +188,8 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
 
         seeds[:, :, k+1] = seeds[:, :, k]  #Populate the next state of the chain with the previous one by default
 
-        pInFi = excdFunc(np.column_stack([par1[:, k+1], par2[:, k+1]]), level)  #Prob. y is in Fi
+        pInFi = excdFunc(par1[:, k+1], par2[:, k+1], level)  #Prob. y is in Fi
+        pInFi = pInFi[:, np.newaxis]
         urandF = np.random.rand(nC, 1)  #Uniform RV's to check acceptance in F
         inFi = urandF < pInFi 
 
@@ -278,7 +293,11 @@ def psus(func, d, t_star, n, p,
     L = 0; #Conditional Level
     n_gen = [n]; #Samples at uncond level
     n_pt = [n]; #To correctly compute pF if no conditional levels are needed
-    
+    # n_gen = np.full(L, n, dtype=int)  
+    # n_pt  = np.full(L, n, dtype=int)
+    # n_gen = np.full(max(1, L), n, dtype=int)
+    # n_pt  = np.full(max(1, L), n, dtype=int)
+
     mn = []
     vr = []
     C_F = []
@@ -339,9 +358,15 @@ def psus(func, d, t_star, n, p,
         ind_Fi = np.where(ind_Fi != 0)[0]  # extract indices
         ind_Fi = ind_Fi[:int(np.floor(mn[L]))]  # first floor(mn) indices
 
-    
 
-        n_pt.append(len(ind_Fi)) 
+        
+        # n_pt = np.zeros(L, dtype=int)
+        # n_pt[L-1] = len(ind_Fi)
+
+        if len(n_pt) <= L:
+            n_pt.append(len(ind_Fi))
+        else:
+            n_pt[L] = len(ind_Fi)
         
         seeds = x_sort[ind_Fi,:];
         	
@@ -373,20 +398,23 @@ def psus(func, d, t_star, n, p,
         # condSamp = reshape(permute(condSamp,[1,3,2]),rows,d); #Reshape samples appropriately
         # condSamp = reshape(permute(condSamp,[1,3,2]),rows,d); #Reshape samples appropriately
 
-        rows = condSamp.shape[0]
+        # rows = condSamp.shape[0]
         
 
-        print("n_gen next =", rows)
-        # --- FIX SHAPE FOR SINGLE-SEED CASE ---
-        print("condSamp shape BEFORE fix:", condSamp.shape)
+        
         if condSamp.ndim == 2:
             condSamp = condSamp[:, :, np.newaxis]
-        print("condSamp shape AFTER fix:", condSamp.shape)
+      
 
         condSamp_perm = np.transpose(condSamp, (0, 2, 1))
+        rows = condSamp_perm.shape[0] * condSamp_perm.shape[1]
         condSamp = condSamp_perm.reshape(rows, d)
 
-        n_gen.append(len(condSamp));
+        # n_gen[L-1] = len(condSamp);
+        if len(n_gen) <= L:
+            n_gen.append(len(condSamp))
+        else:
+            n_gen[L] = len(condSamp)
         
         [x_sort,par_sort,y_sort,uncert_sort] = psort(out_dist,[p1,p2],condSamp,50);
         
@@ -417,14 +445,14 @@ def psus(func, d, t_star, n, p,
     #     C_vec = np.array(C_list)
     #     p_F['Cvar'] = varindepprod(mn, (C_vec**2) * vr) / np.prod(n_gen**2)
     if not zero_prob:
-        n_pt_arr = np.array(n_pt[1:L+1])
-        n_gen_arr = np.array(n_gen[1:L+1])
+        n_pt_arr = np.array(n_pt[0:L+1])
+        n_gen_arr = np.array(n_gen[0:L+1])
         mn_arr = np.array(mn)
         vr_arr = np.array(vr)
 
-        p_F['p_F'] = np.prod(n_pt_arr/n_gen_arr) * n_F/n_gen[L+1]
+        p_F['p_F'] = np.prod(n_pt_arr/n_gen_arr) * n_F/n_gen[L]
         p_F['mean'] = np.prod(mn_arr/n_gen_arr)
-        p_F['var'] = varindepprod(mn_arr,vr_arr)/np.prod(np.array(n_gen)**2)
+        p_F['var'] = varindepprod(mn_arr,vr_arr)/np.prod(n_gen_arr**2)
 
 
 
