@@ -62,7 +62,7 @@ def plot_uncertainty(f, mu, std):
     plt.axvline(f, ymax=1, color=color, ls='--')
     plt.ylim(0, plt.ylim()[1])
 
-def vectorise_uncert(f, x, std, seed=None, calibrated=True):
+def vectorise_uncertainty(f, x, std, seed=None, calibrated=True):
     '''Pass a function f and an array of input point x.'''
     
     n = x.shape[0]
@@ -70,17 +70,17 @@ def vectorise_uncert(f, x, std, seed=None, calibrated=True):
         cal = [calibrated]*n
     
     y = f(x)
-    mu = np.zeros((y.shape[0], 1)) #Only 2-par distros for now
+    mu = np.zeros(y.shape[0]) #Only 2-par distros for now
     
     if not seed: seed = np.int32(np.abs(y*1e4))
     else: seed = [seed]*n
     
     shp_std = np.asarray(std).shape
-    if len(shp_std) < 1: std = np.array([[std]]*n) #Check if std is a scalar
-    elif len(shp_std) < 1: std = np.array(std).reshape(-1,1) #Check if std is a list or 1D array
+    if len(shp_std) < 1: std = np.array([std]*n) #Check if std is a scalar
+    elif len(shp_std) < 1: std = np.array(std)#Check if std is a list or 1D array
     
     for i, (yi, sdi) in enumerate(zip(y, std)):
-        mu[i,:] = generate_uncertainty(yi, std=sdi, seed=seed[i], calibrated=cal[i])
+        mu[i] = generate_uncertainty(yi, std=sdi, seed=seed[i], calibrated=cal[i])
     
     return mu, std #This format is expected by psus and is the more general one
 
