@@ -5,9 +5,13 @@ Created on Mon Nov 10 15:08:15 2025
 @author: P.Hristov
 """
 
-from pnm_surrogate import *
+from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
+                          plot_uncertainty, branin)
 from psus import psus
 
+import numpy as np
+import scipy.stats as sts
+import matplotlib.pyplot as plt
 #%% Test the PNM surrogate functionality on random numbers
 f = -1 + 10*np.random.rand(50)
 
@@ -84,17 +88,19 @@ std = [2,1.5,1,0.5,0.25,0.1,0.05,0.01];
 p_F_MC = []
 p_F_list = []
 info_list = []
+
 np.random.seed(1)
 X = getattr(sts, inp_d['name'])(*inp_d['parameters']).rvs((10_000,2))
+
 for s in std:
-    a, b, c = psus(func(s), d, t_star, N, p0, out_d, inp_d);
+    a, b = psus(func(s), d, t_star, N, p0, out_d, inp_d);
     p_F_list.append(a)
     info_list.append(b)
     y, u = func(s)(X)
     p_F_MC.append(np.mean(y >= t_star)) 
-    print("Iteration for sd = {s} completed.")
+    print(f"Iteration for sd = {s} completed.")
 
-p_F_values = np.array([d["p_F"] for d in p_F_list])
+p_F_values = np.array([pf["p_F"] for pf in p_F_list])
 #%% Prints
 print("============== P-SuS ===============")
 print("Probability of failure, p_F:", p_F_values)
