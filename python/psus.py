@@ -93,36 +93,26 @@ def psort(name, pars, x, n):
     return xS, parS, mnS, sdS
 
 
-def fillOut(out,L,x=None,pars=None,y=None,u=None,ind_F=None,ind_Fi=None,l=None,
-            p_excd_F=None,p_excd_Fi=None,n_gen=None,n_C=None,n_F=None,mn=None,
-            vr=None,C=None,mn_F=None,vr_F=None,C_F=None):
+def fill_out(out, L, **kwargs):
+            # x=None, pars=None, y=None, u=None,
+            # n_gen=None, l=None,
+            # ind_F=None, p_excd_F=None, n_F=None,
+            # mn_F=None, vr_F=None, C_F=None,
+            # ind_Fi=None, p_excd_Fi=None, n_C=None, 
+            # mn=None, vr=None, C=None):
     
-    out[L]['x'] = x; 
-    out[L]['pars'] = pars; 
-    out[L]['y'] = y; 
-    out[L]['u'] = u; 
-       
-    out[L]['ind_F'] = ind_F; 
-    out[L]['ind_Fi'] = ind_Fi
-       
-    out[L]['t_i'] = l
-    out[L]['p_star'] = p_excd_F
-    out[L]['p_ij'] = p_excd_Fi
-       
-    out[L]['N_i'] = n_gen
-    out[L]['N_C'] = n_C
-    out[L]['N_F'] = n_F
-       
-    out[L]['p_Ci']['mn'] = mn
-    out[L]['p_Ci']['vr'] = vr
-    out[L]['p_Ci']['C'] = C
-       
-    out[L]['p_Fi']['mn'] = mn_F
-    out[L]['p_Fi']['vr'] = vr_F
-    out[L]['p_Fi']['C'] = C_F
-
-    return out
-
+    if kwargs.get('mn'):
+        p_Ci = {'mn':kwargs.pop('mn'), 'vr':kwargs.pop('vr'), 'C':kwargs.pop('C')}
+        out[L]['p_Ci'] = p_Ci #Moments of level exceedence RV
+    
+    if kwargs.get('mn_F'): #Avoid overwriting on update
+        p_Fi = {'mn':kwargs.pop('mn_F'), 'vr':kwargs.pop('vr_F'), 'C':kwargs.pop('C_F')}    
+        out[L]['p_Fi'] = p_Fi #Moments of critical threshold exceedence RV
+        
+    for arg, val in kwargs.items():
+        if val is not None:
+            out[L][arg] = val
+    
 def generate_out_funcs(out_dist): #These are loc-scale family only for now: legacy from initial version
     out_dists = ['norm', 'uniform', 'logistic', 'laplace', 't']
     
@@ -273,11 +263,9 @@ def psus(func, d, t_star, n, p,
     
     # OBTAIN RESPONSE - Assume 2 parameter location scale for now
     p1, p2 = func(x); #Get output distribution parameters
-
     
     p1 = np.asarray(p1).reshape(-1, 1)
     p2 = np.asarray(p2).reshape(-1, 1)
-
 
     # RANK RESPONSES
     [x_sort, par_sort, y_sort, uncert_sort] = psort(out_dist,[p1,p2],x,50);
@@ -285,18 +273,15 @@ def psus(func, d, t_star, n, p,
     # Output
     inp_par = {'func':func,'outdist':out_dist,'dim':d,'t_star':t_star,
                   'p_0':p,'N':n}
-    dict_out = {'x':[],'y':[],'u':[],'pars':[],'ind_F':[],'ind_Fi':[],'t_i':[],
-    	'p_star':[],'p_ij':[],'N_i':[],'N_C':[],'p_Ci':[],'N_F':[],'p_Fi':[]};
-    
+    # info_out = [{'x':[],'y':[],'u':[],'pars':[],'ind_F':[],'ind_Fi':[],'t_i':[],
+    # 	'p_star':[],'p_ij':[],'N_i':[],'N_C':[],'p_Ci':[],'N_F':[],'p_Fi':[]}]
+    info_out = [{}]
+    # info_out = []
     
     # Set loop
     L = 0; #Conditional Level
     n_gen = [n]; #Samples at uncond level
     n_pt = [n]; #To correctly compute pF if no conditional levels are needed
-    # n_gen = np.full(L, n, dtype=int)  
-    # n_pt  = np.full(L, n, dtype=int)
-    # n_gen = np.full(max(1, L), n, dtype=int)
-    # n_pt  = np.full(max(1, L), n, dtype=int)
 
     mn = []
     vr = []
@@ -310,8 +295,6 @@ def psus(func, d, t_star, n, p,
         ind_F = logc_acc(p_excd_F);
         n_F = np.sum(ind_F);
 
-         
-        
         # Compute moments of counting distro
         mn.append(np.sum(p_excd_F)) #Mean - can be used in both Poisson and Gaussian approx.
         vr.append(np.sum( p_excd_F*(1-p_excd_F) )) #Variance - for Gaussian approx.;
@@ -320,29 +303,18 @@ def psus(func, d, t_star, n, p,
         C_F.append(min( mn[L]/3/np.sqrt(vr[L]), (n_gen[L]-mn[L])/3/np.sqrt(vr[L]) ));
         
         # Fill in new data
-        # sOut = fillOut(sOut, L, x_sort, par_sort, y_sort, uncert_sort, ind_F,
-        #                None, None, p_excd_F, None, n_gen[L], None, n_F, None,
-        #                None, None, mn[L], vr[L], CF[L]);
-        if L not in dict_out:
-            dict_out[L] = {'p_Ci': {}, 'p_Fi': {}}           
-        dict_out = fillOut(dict_out, L, x_sort, par_sort, y_sort, uncert_sort, ind_F,
-                       p_excd_F=p_excd_F, n_gen=n_gen[L], n_F=n_F, mn_F=mn[L],
-                       vr_F=vr[L], C_F=C_F[L]);
+        fill_out(info_out, L, x=x_sort, pars=par_sort, y=y_sort, u=uncert_sort,
+                n_gen=n_gen[L], ind_F=ind_F, p_star=p_excd_F, n_F=n_F,
+                mn_F=mn[L], vr_F=vr[L], C_F=C_F[L])
                                            
         if n_F > n*p: break
     	
     	# CALCULATE LEVEL
-
-
-
         level = y_sort[p0N];
 
-        
         # Next level probabilities
         # p_in_Fi = excd_fun(par_sort, level); #Probability of exceedance
         p_in_Fi = excd_fun(par_sort[:,0], par_sort[:,1], level)
-
-
 
         # Counting distribution moments
         mn[L] = np.sum(p_in_Fi) #Mean - can be used in both Poisson and Gaussian approx.
@@ -353,15 +325,8 @@ def psus(func, d, t_star, n, p,
         
         # Choose seeds
         ind_Fi = logc_acc(p_in_Fi);
-        # ind_Fi = find(ind_Fi,floor(mn(L)),'first');
-        # ind_Fi = np.where(ind_Fi != 0)[np.floor(mn[L])] #Verify that this is equivalent to the above #TEST
         ind_Fi = np.where(ind_Fi != 0)[0]  # extract indices
         ind_Fi = ind_Fi[:int(np.floor(mn[L]))]  # first floor(mn) indices
-
-
-        
-        # n_pt = np.zeros(L, dtype=int)
-        # n_pt[L-1] = len(ind_Fi)
 
         if len(n_pt) <= L:
             n_pt.append(len(ind_Fi))
@@ -371,46 +336,29 @@ def psus(func, d, t_star, n, p,
         seeds = x_sort[ind_Fi,:];
         	
         # Fill in update
-        dict_out = fillOut(dict_out,L,ind_Fi=ind_Fi,l=level,p_excd_Fi=p_in_Fi,
-                           n_C=n_pt[L],mn=mn[L],vr=vr[L],C=C[L]);
+        fill_out(info_out, L, t_i=level, ind_Fi=ind_Fi, p_ij=p_in_Fi, n_C=n_pt[L],
+                mn=mn[L], vr=vr[L], C=C[L])
+        
         
         # Use MMA to populate the conditional level
         condSamp, p1, p2, pA = pmma(d_func, excd_fun, dist_obj, func, d, seeds,
                                 par_sort[ind_Fi,0], par_sort[ind_Fi,1], level,
                                 n, n_pt[L]);
-        
-        # p1 = p1(:);
-        # p2 = p2(:);
         p1 = p1.flatten();
         p2 = p2.flatten();
 
+        if p1.ndim == 1: p1 = p1[:, np.newaxis]
+        if p2.ndim == 1: p2 = p2[:, np.newaxis]
 
-        if p1.ndim == 1:
-            p1 = p1[:, np.newaxis]
-        if p2.ndim == 1:
-            p2 = p2[:, np.newaxis]
-
-    
         L += 1;
-        
-        # Restructuring 'seeds' for sorting
-        # rows, _ = condSamp.shape #Find number of rows for reshaping
-        # condSamp = reshape(permute(condSamp,[1,3,2]),rows,d); #Reshape samples appropriately
-        # condSamp = reshape(permute(condSamp,[1,3,2]),rows,d); #Reshape samples appropriately
-
-        # rows = condSamp.shape[0]
-        
-
         
         if condSamp.ndim == 2:
             condSamp = condSamp[:, :, np.newaxis]
       
-
         condSamp_perm = np.transpose(condSamp, (0, 2, 1))
         rows = condSamp_perm.shape[0] * condSamp_perm.shape[1]
         condSamp = condSamp_perm.reshape(rows, d)
 
-        # n_gen[L-1] = len(condSamp);
         if len(n_gen) <= L:
             n_gen.append(len(condSamp))
         else:
@@ -424,47 +372,28 @@ def psus(func, d, t_star, n, p,
             zero_prob = True
             break
     
-    # Calculate probability of failure
-    L -= 1; #Adjust to correct number of levels
-    
-    p_F = {}
-    # if ~zero_prob:
-    #     # Independence among Bernoulli's
-    #     p_F['p_F'] = np.prod( n_pt[1:L]/n_gen[1:L] ) * n_F/n_gen[L+1]
-    #     p_F['mean'] = np.prod(mn/n_gen);
-    #     p_F['var'] = varindepprod(mn,vr)/np.prod(n_gen**2);
+        info_out.append({})
         
-    #     # Maximal allowable dependence
-    #     # C = [dict_out(:).p_Ci];
-    #     # C = [[C(:).C].T; sOut(end).p_Fi.C];
-    #     # p_F.Cvar = varindepprod(mn, C**2*vr)/np.prod(n_gen**2);
-    #     # Collect C across levels
-    #     C_list = [level['p_Ci']['C'] for level in dict_out]   # each is scalar
-    #     # Append p_Fi.C from the last level
-    #     C_list.append(dict_out[-1]['p_Fi']['C'])
-    #     C_vec = np.array(C_list)
-    #     p_F['Cvar'] = varindepprod(mn, (C_vec**2) * vr) / np.prod(n_gen**2)
+    # Calculate probability of failure
+    p_F = {}
     if not zero_prob:
-        n_pt_arr = np.array(n_pt[0:L+1])
-        n_gen_arr = np.array(n_gen[0:L+1])
-        mn_arr = np.array(mn[0:L+1])
-        vr_arr = np.array(vr[0:L+1])
+        n_pt = np.array(n_pt)
+        n_gen = np.array(n_gen)
+        mn = np.array(mn)
+        vr = np.array(vr)
 
-        p_F['p_F'] = np.prod(n_pt_arr/n_gen_arr) * n_F/n_gen[L]
-        p_F['mean'] = np.prod(mn_arr/n_gen_arr)
-        p_F['var'] = varindepprod(mn_arr,vr_arr)/np.prod(n_gen_arr**2)
-
+        p_F['p_F'] = np.prod(n_pt/n_gen[:L]) * n_F/n_gen[L]
+        p_F['mean'] = np.prod(mn/n_gen)
+        p_F['var'] = varindepprod(mn, vr)/np.prod(n_gen**2)
 
         # Maximal dependence
-        C_list = [dict_out[l]['p_Ci']['C'] for l in range(L+1)]
-        C_vec = np.array(C_list)
-        p_F['Cvar'] = varindepprod(mn_arr, (C_vec**2) * vr_arr) / np.prod(np.array(n_gen)**2)
+        C = [info_out[l]['p_Ci']['C'] for l in range(L)]
+        C.append(info_out[L]['p_Fi']['C'])
+        C = np.array(C)
+        p_F['Cvar'] = varindepprod(mn, C**2 * vr) / np.prod(np.array(n_gen)**2)
     else:
         p_F['p_F'] = 0;
         p_F['mean'] = 0;
         p_F['var'] = np.inf;
     
-    
-    dict_out_F = {'Results': dict_out, 'p_F': p_F, 'Inputs': inp_par}
-    
-    return p_F, dict_out_F, L
+    return p_F, info_out, inp_par
