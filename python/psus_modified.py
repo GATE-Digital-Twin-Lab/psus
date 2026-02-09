@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 sts.trapz = np.trapz
 import pyuncertainnumber as pun
 from pyuncertainnumber import pba
-
+import pyuncertainnumber.pba.operation as op
+import operator
 
 def psus(func, d, t_star, n, p,
          out_dist,
@@ -76,10 +77,10 @@ def psus(func, d, t_star, n, p,
     vr = []
     C_F = []
     C = []
-    mn_i = []
-    mn_p = []
-    vr_i = []
-    vr_p = []
+    pF_exact_i = []
+    pF_exact_p = []
+    pF_exact_pqd = []
+
     # Run loop
     while True: #n_F < n*p
         # Record failure
@@ -98,14 +99,21 @@ def psus(func, d, t_star, n, p,
         bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F]
         N_F_dist_i = bernoullis[0]
         N_F_dist_p = bernoullis[0]
+        N_F_dist_pqd = bernoullis[0]
+
         for b in bernoullis[1:]:
             N_F_dist_i = N_F_dist_i.add(b, dependency='i')
             N_F_dist_p = N_F_dist_p.add(b, dependency='p')
+            N_F_dist_pqd = op.positiveconv_pbox(N_F_dist_pqd, b)
 
-        mn_i.append(float(N_F_dist_i.mean.lo)/len(p_excd_F))
-        mn_p.append(float(N_F_dist_p.mean.lo)/len(p_excd_F))
-        vr_i.append(float(N_F_dist_i.var.lo)/len(p_excd_F)**2)
-        vr_p.append(float(N_F_dist_p.var.lo)/len(p_excd_F)**2)
+        N_F_dist_i = N_F_dist_i/len(p_excd_F)
+        N_F_dist_p = N_F_dist_p/len(p_excd_F)
+        N_F_dist_pqd = N_F_dist_pqd/len(p_excd_F)
+
+        pF_exact_i.append(N_F_dist_i)
+        pF_exact_p.append(N_F_dist_p)
+        pF_exact_pqd.append(N_F_dist_pqd)
+
         # Fill in new data
         fill_out(info_out, L, x=x_sort, pars=par_sort, y=y_sort, u=uncert_sort,
                 n_gen=n_gen[L], ind_F=ind_F, p_star=p_excd_F, n_F=n_F,
@@ -131,13 +139,21 @@ def psus(func, d, t_star, n, p,
         bernoullis_Fi = [pba.bernoulli(float(p)) for p in p_in_Fi]
         N_Fi_dist_i = bernoullis_Fi[0]
         N_Fi_dist_p = bernoullis_Fi[0]
+        N_Fi_dist_pqd = bernoullis_Fi[0]
+
         for b in bernoullis_Fi[1:]:
             N_Fi_dist_i = N_Fi_dist_i.add(b, dependency='i')
             N_Fi_dist_p = N_Fi_dist_p.add(b, dependency='p')
-        mn_i[L] = float(N_F_dist_i.mean.lo)/len(p_in_Fi)
-        mn_p[L] = float(N_F_dist_p.mean.lo)/len(p_in_Fi)
-        vr_i[L] = float(N_F_dist_i.var.lo)/len(p_in_Fi)**2
-        vr_p[L] = float(N_F_dist_p.var.lo)/len(p_in_Fi)**2
+            N_Fi_dist_pqd = op.positiveconv_pbox(N_Fi_dist_pqd, b)
+
+        N_Fi_dist_i = N_Fi_dist_i/len(p_in_Fi)
+        N_Fi_dist_p = N_Fi_dist_p/len(p_in_Fi)
+        N_Fi_dist_pqd = N_Fi_dist_pqd/len(p_in_Fi)
+
+        pF_exact_i[L] = N_Fi_dist_i
+        pF_exact_p[L] = N_Fi_dist_p
+        pF_exact_pqd[L] = N_Fi_dist_pqd
+
 
         # Choose seeds
         ind_Fi = logc_acc(p_in_Fi);
@@ -194,6 +210,7 @@ def psus(func, d, t_star, n, p,
     p_F = {}
     p_F_i = {}
     p_F_p = {}
+    p_F_pqd = {}
     if not zero_prob:
         n_pt = np.array(n_pt)
         n_gen = np.array(n_gen)
@@ -201,10 +218,10 @@ def psus(func, d, t_star, n, p,
         vr = np.array(vr)
 
 
-        mn_i = np.array(mn_i)
-        vr_i = np.array(vr_i)
-        mn_p = np.array(mn_p)
-        vr_p = np.array(vr_p)
+        # mn_i = np.array(mn_i)
+        # vr_i = np.array(vr_i)
+        # mn_p = np.array(mn_p)
+        # vr_p = np.array(vr_p)
 
         # # P_F, mean and variance
         p_F['p_F'] = np.prod(n_pt/n_gen[:L]) * n_F/n_gen[L]
@@ -218,14 +235,39 @@ def psus(func, d, t_star, n, p,
         p_F['Cvar'] = varindepprod(mn, C**2 * vr) / np.prod(np.array(n_gen)**2)
 
 
-        p_F_i['mean'] = np.prod(mn_i)
-        p_F_i['var'] = varindepprod(mn_i, vr_i)
-        p_F_p['mean'] = np.prod(mn_p)
-        p_F_p['var'] = varindepprod(mn_p, vr_p)
+        # pF_exact_i = np.array(pF_exact_i)
+        # pF_exact_p = np.array(pF_exact_p)
+        # mn_i = [float(pbox.mean.lo) for pbox in pF_exact_i]
+        # mn_p = [float(pbox.mean.lo) for pbox in pF_exact_p]
+        # p_F_i['mean'] = np.prod(mn_i)
+        # p_F_p['mean'] = np.prod(mn_p)
+
+        #Independent
+        p_i = pF_exact_i[0]
+        for p in pF_exact_i[1:]:
+            p_i = p_i.mul(p, dependency='i')
+
+        p_F_i['mean'] = float(p_i.mean.lo)
+
+        #Perfect
+        p_p = pF_exact_p[0]
+        for p in pF_exact_p[1:]:
+            p_p = p_p.mul(p, dependency='p')
+
+        p_F_p['mean'] = float(p_p.mean.lo)
+
+        #PQD
+        p_pqd = pF_exact_pqd[0]
+        for p in pF_exact_pqd[1:]:
+            p_pqd = op.positiveconv_pbox(p_pqd, b, operator.mul)
+
+        p_F_pqd['mean'] = p_pqd.mean
+
+
     else:
         p_F['p_F'] = 0;
         p_F['mean'] = 0;
         p_F['var'] = np.inf;
     
 
-    return p_F, p_F_i, p_F_p, info_out, inp_par
+    return p_F, p_F_i, p_F_p, p_F_pqd, info_out, inp_par
