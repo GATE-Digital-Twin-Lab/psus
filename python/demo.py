@@ -7,11 +7,12 @@ Created on Mon Nov 10 15:08:15 2025
 
 from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
                           plot_uncertainty, branin)
-from psus import psus
+from psus_modified import psus
 
 import numpy as np
 import scipy.stats as sts
 import matplotlib.pyplot as plt
+
 #%% Test the PNM surrogate functionality on random numbers
 f = -1 + 10*np.random.rand(50)
 
