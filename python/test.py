@@ -16,11 +16,12 @@ def tiny_pf_func(x):
 func = tiny_pf_func
 d = 2
 t_star = 1.9
-n = 2000          # samples per level
+n = 500          # samples per level
 p = 0.1          # conditional probability
 out_dist = "norm"
 inp_dist = {'name':'uniform', 'parameters':[0,1]}
 
+#%% Run
 p_F, p_F_i, p_F_p, p_F_pqd, dict_out_F, L = psus(func, d, t_star, n, p, out_dist, inp_dist)
 np.random.seed(1)
 X = getattr(sts, inp_dist['name'])(*inp_dist['parameters']).rvs((10_000,2))
