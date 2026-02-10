@@ -1,12 +1,11 @@
 from psus import psort, fill_out, generate_out_funcs, pmma, varindepprod, highlight
 import numpy as np
 import scipy.stats as sts
-import matplotlib.pyplot as plt
-sts.trapz = np.trapz
-import pyuncertainnumber as pun
 from pyuncertainnumber import pba
 import pyuncertainnumber.pba.operation as op
 import operator
+
+CONV_THRESH = 1e-8 #Convolve Bernoullis with p >= CONV_THRESH
 
 def psus(func, d, t_star, n, p,
          out_dist,
@@ -95,8 +94,8 @@ def psus(func, d, t_star, n, p,
         # Compute scaling constant - N_F
         C_F.append(min( mn[L]/3/np.sqrt(vr[L]), (n_gen[L]-mn[L])/3/np.sqrt(vr[L]) ));
 
-
-        bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F]
+        p_excd_F_ct = p_excd_F[p_excd_F >= CONV_THRESH]        
+        bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F_ct]
         N_F_dist_i = bernoullis[0]
         N_F_dist_p = bernoullis[0]
         N_F_dist_pqd = bernoullis[0]
