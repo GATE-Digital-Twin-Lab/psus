@@ -4,7 +4,7 @@ from pyuncertainnumber import pba
 import pyuncertainnumber.pba.operation as op
 import scipy.stats as sts
 
-def sum_distributions(distributions):
+def sum_distributions(distributions): #This is with scipy.stats (rewrite for pun)
 
     # Initialize first distr
     first_dist = distributions[0]
@@ -45,7 +45,7 @@ print("Mean:", mean)
 print("Variance interval:", var_interval)
 
 
-def compute_P_Q(dist):
+def compute_P_Q(dist): #This is with pun
 
     mean = dist.mean
     var = dist.var
