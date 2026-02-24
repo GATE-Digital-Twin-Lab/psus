@@ -18,13 +18,16 @@ def sum_distributions_frechet(distributions): #This is with scipy.stats (rewrite
     mean_total = first_dist.mean()
     var_lower = first_dist.var()
     var_upper = first_dist.var()
-
+    
+    VX = ival.I(var_lower, var_upper)
+    
     # Iteratively add remaining distr
     for dist in distributions[1:]:
 
         EX = mean_total
-        VX_lower = var_lower
-        VX_upper = var_upper
+        # VX_lower = var_lower
+        # VX_upper = var_upper
+        # VX = ival.I(var_lower, var_upper)
 
         EY = dist.mean()
         VY = dist.var()
@@ -33,13 +36,15 @@ def sum_distributions_frechet(distributions): #This is with scipy.stats (rewrite
         mean_total = EX + EY
 
         # Update table var
-        new_lower = (math.sqrt(VX_lower) - math.sqrt(VY))**2
-        new_upper = (math.sqrt(VX_upper) + math.sqrt(VY))**2
+        # new_lower = (math.sqrt(VX_lower) - math.sqrt(VY))**2
+        # new_upper = (math.sqrt(VX_upper) + math.sqrt(VY))**2
+        VX = ival.env(ival.sqrt(VX) - math.sqrt(VY), ival.sqrt(VX) + math.sqrt(VY))**2
+        print(VX)
 
-        var_lower = new_lower
-        var_upper = new_upper
+        # var_lower = newV.leftval #new_lower
+        # var_upper = newV.rightval #new_upper
 
-    return mean_total, (var_lower, var_upper)
+    return mean_total, VX #(var_lower, var_upper)
 
 def compute_P_Q(dist): #This is with pun
 
