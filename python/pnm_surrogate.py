@@ -64,10 +64,10 @@ def plot_uncertainty(f, mu, std):
 
 
 def vectorise_uncertainty(f, x, std, seed=None, calibrated=True):
-    '''Pass a function f and an array of input point x.'''
+    '''Pass a function f and an array of input points x.'''
     
     n = x.shape[0]
-    if not hasattr(calibrated, '__iter__'): #Enable some responses to be calbrated and some not
+    if not hasattr(calibrated, '__iter__'): #Enable some responses to be calibrated and some not
         cal = [calibrated]*n
     
     y = f(x)
