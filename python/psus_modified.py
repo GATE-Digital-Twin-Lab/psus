@@ -1,12 +1,14 @@
 from psus import psort, fill_out, generate_out_funcs, pmma, varindepprod, highlight
+from mc_mv_final import sum_distributions_frechet, product_distributions_frechet_samples, var_bounds_pbox
 import numpy as np
 import scipy.stats as sts
-import matplotlib.pyplot as plt
-sts.trapz = np.trapz
-import pyuncertainnumber as pun
+# import matplotlib.pyplot as plt
+# sts.trapz = np.trapz
+# import pyuncertainnumber as pun
 from pyuncertainnumber import pba
-import pyuncertainnumber.pba.operation as op
-import operator
+# import pyuncertainnumber.pba.operation as op
+# import operator
+import Interval as ival
 
 def psus(func, d, t_star, n, p,
          out_dist,
@@ -77,9 +79,12 @@ def psus(func, d, t_star, n, p,
     vr = []
     C_F = []
     C = []
-    pF_exact_i = []
-    pF_exact_p = []
-    pF_exact_pqd = []
+    # pF_exact_i = []
+    # pF_exact_p = []
+    # pF_exact_pqd = []
+    pF_exact_f = []
+    pF_exact_f_mean = []
+    pF_exact_f_var = []
 
     # Run loop
     while True: #n_F < n*p
@@ -96,23 +101,37 @@ def psus(func, d, t_star, n, p,
         C_F.append(min( mn[L]/3/np.sqrt(vr[L]), (n_gen[L]-mn[L])/3/np.sqrt(vr[L]) ));
 
 
-        bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F]
-        N_F_dist_i = bernoullis[0]
-        N_F_dist_p = bernoullis[0]
-        N_F_dist_pqd = bernoullis[0]
+        # bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F]
+        bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F if p > 1e-4]
+        # N_F_dist_i = bernoullis[0]
+        # N_F_dist_p = bernoullis[0]
+        # N_F_dist_pqd = bernoullis[0]
+        N_F_dist_f = bernoullis[0]
 
         for b in bernoullis[1:]:
-            N_F_dist_i = N_F_dist_i.add(b, dependency='i')
-            N_F_dist_p = N_F_dist_p.add(b, dependency='p')
-            N_F_dist_pqd = op.positiveconv_pbox(N_F_dist_pqd, b)
+            # N_F_dist_i = N_F_dist_i.add(b, dependency='i')
+            # N_F_dist_p = N_F_dist_p.add(b, dependency='p')
+            # N_F_dist_pqd = op.positiveconv_pbox(N_F_dist_pqd, b)
+            N_F_dist_f = N_F_dist_f.add(b, dependency='f')
 
-        N_F_dist_i = N_F_dist_i/len(p_excd_F)
-        N_F_dist_p = N_F_dist_p/len(p_excd_F)
-        N_F_dist_pqd = N_F_dist_pqd/len(p_excd_F)
+        # N_F_dist_i = N_F_dist_i/len(p_excd_F)
+        # N_F_dist_p = N_F_dist_p/len(p_excd_F)
+        # N_F_dist_pqd = N_F_dist_pqd/len(p_excd_F)
+        N_F_dist_f = N_F_dist_f/len(p_excd_F)
 
-        pF_exact_i.append(N_F_dist_i)
-        pF_exact_p.append(N_F_dist_p)
-        pF_exact_pqd.append(N_F_dist_pqd)
+        # pF_exact_i.append(N_F_dist_i)
+        # pF_exact_p.append(N_F_dist_p)
+        # pF_exact_pqd.append(N_F_dist_pqd)
+        pF_exact_f.append(N_F_dist_f)
+
+        pF_exact_f_mean_pun = ival.I(np.mean(N_F_dist_f.left), np.mean(N_F_dist_f.right))
+        pF_exact_f_mean_form, pF_exact_f_var_form = sum_distributions_frechet(bernoullis)
+        pF_exact_f_mean_form = pF_exact_f_mean_form/len(p_excd_F)
+        pF_exact_f_var_form = pF_exact_f_var_form/len(p_excd_F)**2
+        pF_exact_f_mean.append(ival.imp(pF_exact_f_mean_pun, pF_exact_f_mean_form))
+
+        pF_exact_f_var_pun = var_bounds_pbox(N_F_dist_f)
+        pF_exact_f_var.append(ival.imp(pF_exact_f_var_pun, pF_exact_f_var_form))
 
         # Fill in new data
         fill_out(info_out, L, x=x_sort, pars=par_sort, y=y_sort, u=uncert_sort,
@@ -136,24 +155,37 @@ def psus(func, d, t_star, n, p,
         C.append(min( mn[L]/3/np.sqrt(vr[L]), (n_gen[L]-mn[L])/3/np.sqrt(vr[L]) ))
 
 
-        bernoullis_Fi = [pba.bernoulli(float(p)) for p in p_in_Fi]
-        N_Fi_dist_i = bernoullis_Fi[0]
-        N_Fi_dist_p = bernoullis_Fi[0]
-        N_Fi_dist_pqd = bernoullis_Fi[0]
+        # bernoullis_Fi = [pba.bernoulli(float(p)) for p in p_in_Fi]
+        bernoullis_Fi = [pba.bernoulli(float(p)) for p in p_in_Fi if p > 1e-4]
+        # N_Fi_dist_i = bernoullis_Fi[0]
+        # N_Fi_dist_p = bernoullis_Fi[0]
+        # N_Fi_dist_pqd = bernoullis_Fi[0]
+        N_Fi_dist_f = bernoullis_Fi[0]
 
         for b in bernoullis_Fi[1:]:
-            N_Fi_dist_i = N_Fi_dist_i.add(b, dependency='i')
-            N_Fi_dist_p = N_Fi_dist_p.add(b, dependency='p')
-            N_Fi_dist_pqd = op.positiveconv_pbox(N_Fi_dist_pqd, b)
+            # N_Fi_dist_i = N_Fi_dist_i.add(b, dependency='i')
+            # N_Fi_dist_p = N_Fi_dist_p.add(b, dependency='p')
+            # N_Fi_dist_pqd = op.positiveconv_pbox(N_Fi_dist_pqd, b)
+            N_Fi_dist_f = N_Fi_dist_f.add(b, dependency='f')
 
-        N_Fi_dist_i = N_Fi_dist_i/len(p_in_Fi)
-        N_Fi_dist_p = N_Fi_dist_p/len(p_in_Fi)
-        N_Fi_dist_pqd = N_Fi_dist_pqd/len(p_in_Fi)
+        # N_Fi_dist_i = N_Fi_dist_i/len(p_in_Fi)
+        # N_Fi_dist_p = N_Fi_dist_p/len(p_in_Fi)
+        # N_Fi_dist_pqd = N_Fi_dist_pqd/len(p_in_Fi)
+        N_Fi_dist_f = N_Fi_dist_f/len(p_in_Fi)
 
-        pF_exact_i[L] = N_Fi_dist_i
-        pF_exact_p[L] = N_Fi_dist_p
-        pF_exact_pqd[L] = N_Fi_dist_pqd
+        # pF_exact_i[L] = N_Fi_dist_i
+        # pF_exact_p[L] = N_Fi_dist_p
+        # pF_exact_pqd[L] = N_Fi_dist_pqd
+        pF_exact_f[L] = N_Fi_dist_f
+        
+        pF_exact_f_mean_pun_l = ival.I(np.mean(N_F_dist_f.left), np.mean(N_F_dist_f.right))
+        pF_exact_f_mean_form_l, pF_exact_f_var_form_l = sum_distributions_frechet(bernoullis)
+        pF_exact_f_mean_form_l = pF_exact_f_mean_form_l/len(p_in_Fi)
+        pF_exact_f_var_form_l = pF_exact_f_var_form_l/len(p_in_Fi)**2
+        pF_exact_f_mean[L] = ival.imp(pF_exact_f_mean_pun_l, pF_exact_f_mean_form_l)
 
+        pF_exact_f_var_pun_l = var_bounds_pbox(N_F_dist_f)
+        pF_exact_f_var[L] = ival.imp(pF_exact_f_var_pun_l, pF_exact_f_var_form_l)
 
         # Choose seeds
         ind_Fi = logc_acc(p_in_Fi);
@@ -211,6 +243,7 @@ def psus(func, d, t_star, n, p,
     p_F_i = {}
     p_F_p = {}
     p_F_pqd = {}
+    p_F_f = {}
     if not zero_prob:
         n_pt = np.array(n_pt)
         n_gen = np.array(n_gen)
@@ -243,26 +276,37 @@ def psus(func, d, t_star, n, p,
         # p_F_p['mean'] = np.prod(mn_p)
 
         #Independent
-        p_i = pF_exact_i[0]
-        for p in pF_exact_i[1:]:
-            p_i = p_i.mul(p, dependency='i')
+        # p_i = pF_exact_i[0]
+        # for p in pF_exact_i[1:]:
+        #     p_i = p_i.mul(p, dependency='i')
 
-        p_F_i['mean'] = float(p_i.mean.lo)
+        # p_F_i['mean'] = float(p_i.mean.lo)
 
-        #Perfect
-        p_p = pF_exact_p[0]
-        for p in pF_exact_p[1:]:
-            p_p = p_p.mul(p, dependency='p')
+        # #Perfect
+        # p_p = pF_exact_p[0]
+        # for p in pF_exact_p[1:]:
+        #     p_p = p_p.mul(p, dependency='p')
 
-        p_F_p['mean'] = float(p_p.mean.lo)
+        # p_F_p['mean'] = float(p_p.mean.lo)
 
-        #PQD
-        p_pqd = pF_exact_pqd[0]
-        for p in pF_exact_pqd[1:]:
-            p_pqd = op.positiveconv_pbox(p_pqd, b, operator.mul)
+        # #PQD
+        # p_pqd = pF_exact_pqd[0]
+        # for p in pF_exact_pqd[1:]:
+        #     p_pqd = op.positiveconv_pbox(p_pqd, b, operator.mul)
 
-        p_F_pqd['mean'] = p_pqd.mean
+        # p_F_pqd['mean'] = p_pqd.mean
 
+        #Frechet
+        p_f = pF_exact_f[0]
+        for p in pF_exact_f[1:]:
+             p_f = p_f.mul(p, dependency='f')
+
+        p_F_f_mean_pun = ival.I(np.mean(p_f.left), np.mean(p_f.right))
+        p_F_f_mean_form, p_F_f_var_form = product_distributions_frechet_samples(pF_exact_f)
+        p_F_f['mean'] = ival.imp(p_F_f_mean_pun, p_F_f_mean_form)
+
+        p_F_f_var_pun = var_bounds_pbox(p_f)
+        p_F_f['var'] = ival.imp(p_F_f_var_pun, p_F_f_var_form)
 
     else:
         p_F['p_F'] = 0;
@@ -270,4 +314,4 @@ def psus(func, d, t_star, n, p,
         p_F['var'] = np.inf;
     
 
-    return p_F, p_F_i, p_F_p, p_F_pqd, info_out, inp_par
+    return p_F, p_F_f#, p_F_i, p_F_p, p_F_pqd, info_out, inp_par
