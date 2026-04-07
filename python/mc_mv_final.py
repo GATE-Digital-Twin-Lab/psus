@@ -1,8 +1,4 @@
 import math
-import pyuncertainnumber as pun
-from pyuncertainnumber import pba
-import pyuncertainnumber.pba.operation as op
-import scipy.stats as sts
 import Interval as ival
 import numpy as np
 
@@ -127,14 +123,6 @@ def sum_distributions_frechet(distributions):
 
     return EX, VX 
 
-X = pba.bernoulli(0.8658733829633471)
-Y = pba.bernoulli(0.8113785888862199)
-# Z = pba.bernoulli(0.6552882106982719)
-dist = (X, Y)
-
-EX, VX = sum_distributions_frechet(dist)
-print(EX, VX)
-
 def product_distributions_frechet(distributions, n_samples=100000):
 
     # Initialize first distribution
@@ -247,14 +235,14 @@ class IntervalWrapper:
 
         # extract endpoints regardless of interval implementation
         if hasattr(interval, "left"):
-            self.lo = interval.left() if callable(interval.left) else interval.left
+            self.lo = interval.leftval if callable(interval.left) else interval.left
         elif hasattr(interval, "leftval"):
             self.lo = interval.leftval
         else:
             raise ValueError("Cannot determine interval lower bound")
 
         if hasattr(interval, "right"):
-            self.hi = interval.right() if callable(interval.right) else interval.right
+            self.hi = interval.rightval if callable(interval.right) else interval.right
         elif hasattr(interval, "rightval"):
             self.hi = interval.rightval
         else:
@@ -290,18 +278,7 @@ class TestDist:
 
 
 
-X = TestDist(1,10,(2,4),(0.25,4))
-Y = TestDist(2,8,(3,6),(1,9)) 
-# X = pba.bernoulli(0.8658733829633471)
-# Y = pba.bernoulli(0.8113785888862199)
-# Z = pba.bernoulli(0.6552882106982719)
-
-dist = (X, Y)
-# EX, VX = product_distributions_frechet(dist)
-# print(EX, VX)
-
-
-def product_distributions_frechet_samples(distributions, n_samples=100000):
+def product_distributions_frechet_samples(distributions, n_samples=10_000):
 
     first_dist = distributions[0]
 
@@ -323,10 +300,10 @@ def product_distributions_frechet_samples(distributions, n_samples=100000):
         mean_product = ival.env(lower_mean, upper_mean)
 
         #Monte Carlo sampling
-        # EX_samples = np.random.uniform(EX.left(), EX.right(), n_samples)
-        # VX_samples = np.random.uniform(VX.left(), VX.right(), n_samples)
-        # EY_samples = np.random.uniform(EY.left(), EY.right(), n_samples)
-        # VY_samples = np.random.uniform(VY.left(), VY.right(), n_samples)
+        # EX_samples = np.random.uniform(EX.leftval, EX.rightval, n_samples)
+        # VX_samples = np.random.uniform(VX.leftval, VX.rightval, n_samples)
+        # EY_samples = np.random.uniform(EY.leftval, EY.rightval, n_samples)
+        # VY_samples = np.random.uniform(VY.leftval, VY.rightval, n_samples)
         EX_samples, VX_samples = sample_EX_VX(first_dist, n_samples)
         EY_samples, VY_samples = sample_EX_VX(dist, n_samples)
 
@@ -365,8 +342,8 @@ def product_distributions_frechet_samples(distributions, n_samples=100000):
         )
 
         #Sample V[X²] and V[Y²]
-        VZ_s = np.random.uniform(VZ.left(), VZ.right(), len(EX_samples))
-        VW_s = np.random.uniform(VW.left(), VW.right(), len(EX_samples))
+        VZ_s = np.random.uniform(VZ.leftval, VZ.rightval, len(EX_samples))
+        VW_s = np.random.uniform(VW.leftval, VW.rightval, len(EX_samples))
 
         #E[X²Y]
         EX2Y_low = EX2_s * EY_samples - np.sqrt(np.maximum(VZ_s * VY_samples, 0))
@@ -431,14 +408,6 @@ def product_distributions_frechet_samples(distributions, n_samples=100000):
 
     return EX, VX
 
-X = pba.bernoulli(0.8658733829633471)
-Y = pba.bernoulli(0.8113785888862199)
-# Z = pba.bernoulli(0.6552882106982719)
-dist = (X, Y)
-
-EX, VX = product_distributions_frechet_samples(dist)
-print(EX, VX)
-
 def var_bounds_pbox(N_F_dist_f):
     left = np.asarray(N_F_dist_f.left, float)
     right = np.asarray(N_F_dist_f.right, float)
@@ -456,6 +425,4 @@ def var_bounds_pbox(N_F_dist_f):
     VX = ival.I(lower, upper)
     return VX
 
-# var = var_bounds_pbox(X)
-# print(var)
 
