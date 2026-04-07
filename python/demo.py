@@ -5,13 +5,16 @@ Created on Mon Nov 10 15:08:15 2025
 @author: P.Hristov
 """
 
-from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
-                          plot_uncertainty, branin)
-from psus_modified import psus
-
 import numpy as np
 import scipy.stats as sts
 import matplotlib.pyplot as plt
+
+import os
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
+                          plot_uncertainty, branin)
+from psus_modified_slim import psus
 
 #%% Test the PNM surrogate functionality on random numbers
 f = -1 + 10*np.random.rand(50)
@@ -48,7 +51,7 @@ for i, fi in enumerate(f):
     plot_uncertainty(fi, mu, std)
     plt.title(f'{i}, {fi:.4f}')
     plt.show()
-    
+
 #%% Test the PNM surrogate on the Branin function
 x = np.random.rand(1000,2)
 f = branin(x)
@@ -72,44 +75,45 @@ plt.hist(pd(mu_cal, std).cdf(f), np.arange(0,1,0.01), color='g', label='Calibrat
 
 plt.legend()
 plt.show()
- 
-
 
 #%% Set up Branin
 d = 2
 t_star = 230
-N = 1000
+N = 100
 p0 = 0.1
 out_d = 'norm'
 inp_d = {'name': 'uniform', 'parameters':[0,1]}
-func = lambda std: lambda x: vectorise_uncertainty(branin, x, std=std)
+func = lambda std: lambda x: vectorise_uncertainty(branin, x, std=std) #Default is all responses are calibrated
 
 #%% Run P-SuS with model uncertainty reducing based on computational resources
 std = [2,1.5,1,0.5,0.25,0.1,0.05,0.01];
 p_F_MC = []
-p_F_list = []
+p_F_PSuS_list = []
+p_F_IPSuS_list = []
 info_list = []
 
 np.random.seed(1)
 X = getattr(sts, inp_d['name'])(*inp_d['parameters']).rvs((10_000,2))
 
 for s in std:
-    a, b = psus(func(s), d, t_star, N, p0, out_d, inp_d);
-    p_F_list.append(a)
-    info_list.append(b)
-    y, u = func(s)(X)
-    p_F_MC.append(np.mean(y >= t_star)) 
+    p_F_PSuS, p_F_IPSuS, info = psus(func(s), d, t_star, N, p0, out_d, inp_d);
+    p_F_PSuS_list.append(p_F_PSuS)
+    p_F_IPSuS_list.append(p_F_IPSuS)
+    info_list.append(info)
+    
+    plt.show()
+    # y, u = func(s)(X)
+    # p_F_MC.append(np.mean(y >= t_star)) 
     print(f"Iteration for sd = {s} completed.")
 
-p_F_values = np.array([pf["p_F"] for pf in p_F_list])
+
 #%% Prints
 print("============== P-SuS ===============")
 print("Probability of failure, p_F:", p_F_values)
 print("\n============== Monte Carlo ===============")
 print("Probability of failure, p_F_MC:", p_F_MC)
 
-
-
+#%% Set up tiny function
 def tiny_pf_func(x):
     # x in [0,1]^d
     y = np.sum(x, axis=1)
