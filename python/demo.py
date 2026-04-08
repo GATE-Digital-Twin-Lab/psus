@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import os
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
+import pickle
 
 from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
                           plot_uncertainty, branin)
@@ -85,9 +86,18 @@ out_d = 'norm'
 inp_d = {'name': 'uniform', 'parameters':[0,1]}
 func = lambda std: lambda x: vectorise_uncertainty(branin, x, std=std) #Default is all responses are calibrated
 
+#%% Load previously run IP-SuS for Branin
+path = os.path.normpath(
+    r'C:\Users\petar.hristov\OneDrive - GATE Institute - Sofia University'+\
+    r'\Reliable Computational Modelling - Documents\Projects\Internal Projects'+\
+    r'\UQ\Code\psus')
+
+with open(os.path.join(path, 'tmp_psus.pkl'), 'rb') as file:
+    info_list = pickle.load(file)
+
 #%% Run P-SuS with model uncertainty reducing based on computational resources
-std = [2,1.5,1,0.5,0.25,0.1,0.05,0.01];
-p_F_MC = []
+# std = [2,1.5,1,0.5,0.25,0.1,0.05,0.01];
+std = [0.1,0.05,0.01];
 p_F_PSuS_list = []
 p_F_IPSuS_list = []
 info_list = []
@@ -102,10 +112,42 @@ for s in std:
     info_list.append(info)
     
     plt.show()
-    # y, u = func(s)(X)
-    # p_F_MC.append(np.mean(y >= t_star)) 
+    print(f"Iteration for sd = {s} completed.")
+#%% MC check 
+p_F_MC = []
+np.random.seed(1)
+X = getattr(sts, inp_d['name'])(*inp_d['parameters']).rvs((10_000,2))
+
+for s in std:
+    y, _ = func(s)(X)
+    p_F_MC.append(np.mean(y >= t_star)) 
     print(f"Iteration for sd = {s} completed.")
 
+#%% True p_F MC check
+y = branin(X)
+p_F_true = np.mean(y >= t_star)
+
+#%% Plot all levels for all available precisions
+for i, exp in enumerate(info_list):
+    prod = 1
+    _, axs = plt.subplots(1, len(exp), figsize=(30,10), sharey=True)
+    _, ax1 = plt.subplots(1,1, figsize=(15,15))
+    for j, l in enumerate(exp):
+        if j == (len(exp) - 1): key = 'p_F_n'
+        else: key = 'p_F_i' #Assuming * is Frechet by default
+        
+        l[key].plot(ax=axs[j])
+        axs[j].set_title(rf'$p_{{F_{j}}}$', fontsize=35)
+        axs[j].xaxis.set_tick_params(labelsize=20)
+        axs[j].yaxis.set_tick_params(labelsize=20)
+        
+        prod *= l[key]
+    prod.plot(ax=ax1)
+    ax1.vlines(p_F_MC[i], 1.0, 'r--') #Failure probability with MC for the PNM
+    ax1.vlines(p_F_true, 1.0, 'k') #Failure probability with MC for the true model
+    ax1.set_title('$p_F^{IP-SuS}$', fontsize=35)
+    ax1.yaxis.set_tick_params(labelsize=20)
+    ax1.xaxis.set_tick_params(labelsize=20)
 
 #%% Prints
 print("============== P-SuS ===============")
