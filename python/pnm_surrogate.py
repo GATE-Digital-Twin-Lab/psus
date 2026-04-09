@@ -106,6 +106,6 @@ def branin(x):
     s = 10
     t = 1/(8*np.pi)
     
-    y = (a*(x2-b*x1**2+c*x1-r)**2+s*(1-t)*np.cos(x1)+s)+5*x1; #True function
+    y = (a*(x2-b*x1**2+c*x1-r)**2+s*(1-t)*np.cos(x1)+s)+5*x1 #True function
 
     return y
