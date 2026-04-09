@@ -108,6 +108,10 @@ def fill_out(out, L, **kwargs):
     if kwargs.get('mn_F'): #Avoid overwriting on update
         p_Fi = {'mn':kwargs.pop('mn_F'), 'vr':kwargs.pop('vr_F'), 'C':kwargs.pop('C_F')}    
         out[L]['p_Fi'] = p_Fi #Moments of critical threshold exceedence RV
+    
+    if kwargs.get('p_F_mean'):
+        p_Fi = {'mn':kwargs.pop('p_F_mean'), 'vr':kwargs.pop('p_F_var')}
+        out[L]['p_Fi_imprecise'] = p_Fi
         
     for arg, val in kwargs.items():
         if val is not None:
