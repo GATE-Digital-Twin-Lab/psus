@@ -109,3 +109,63 @@ def branin(x):
     y = (a*(x2-b*x1**2+c*x1-r)**2+s*(1-t)*np.cos(x1)+s)+5*x1 #True function
 
     return y
+
+def branin_uncert(x, evals=1, mode='neg', get_true_out=False):
+    #x is a 1x2 vector 
+    #
+    
+    f = branin(x)
+    
+    # Uncertainty
+    if mode == 'const': #Variance depends only on iterations
+        #evals = min(evals,100); #Prevent negative variance
+        #u = 50./evals-.5 * ones(size(x,1),1); #For example
+        cv = cv_uncert(x);
+    else:
+        u = np.sqrt(np.exp(-0.01*evals) * np.abs(f)); #SD of a normal deviate
+
+    # Mean of observation
+    # scales = np.log(np.abs(f)+1) / 2 #Original c
+    # scales = np.log(np.abs(f)+1) / 3 #Modified c for UC
+    scales = (np.sin(f)+1) / 2 #Modified c for UC
+    # scales = min(log(abs(f)+1) / 2, 1.8) #Modified c for UC
+    
+    if mode == 'pos':
+        m = f + scales * u;
+    elif mode == 'neg':
+        m = f - scales * u;
+    else:
+        u = (cv * m);
+        m = f #Exact convergence in mean with some bounds
+    
+    if get_true_out: return m, u, f
+    
+    return m, u
+
+def cv_uncert(x):
+    cv = np.zeros((x.shape[0], 1));
+    
+    for i in range(len(x)):
+        nX = np.linalg.norm(x[i])
+        
+        if nX <= 0.2:
+            cv[i] = 0.0028
+        elif 0.2 < nX <= 0.4:
+            cv[i] = 0.0049
+        elif 0.4 < nX <= 0.6:
+            cv[i] = 0.0946
+        elif 0.6 < nX <= 0.8:
+            cv[i] = 0.0151
+        elif 0.8 < nX <= 1:
+            cv[i] = 0.0023
+        elif 1 < nX <= 1.2:
+            cv[i] = 0.0102
+        elif 1.2 < nX <= 1.4:
+            cv[i] = 0.0291
+        elif 1.4 < nX <= 1.6:
+            cv[i] = 0.0420
+        elif 1.6 < nX <= 1.8:
+            cv[i] = 0.0464;
+        elif 1.8 < nX <= 2:
+            cv[i] = 0.0531;
+    return cv
