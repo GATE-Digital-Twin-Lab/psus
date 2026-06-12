@@ -45,10 +45,18 @@ def psus(func, d, t_star, n, p,
     p0N = int(p*n) #Target number of seeds
     
     # PREPARE INPUTS
-    dist_obj = getattr(sts, inp_dist['name'])(*inp_dist['parameters'])
+    # dist_obj = getattr(sts, inp_dist['name'])(*inp_dist['parameters'])
+    dist_obj = [
+    getattr(sts, dist_info['name'])(*dist_info['parameters'])
+    for dist_info in inp_dist
+    ]
     
     # Sample the input
-    x = dist_obj.rvs((n,d));
+    # x = dist_obj.rvs((n,d))
+    x = np.column_stack([
+    dist_obj[j].rvs(size=n)
+    for j in range(d)
+    ])
     
     # OBTAIN RESPONSE - Assume 2 parameter location scale for now
     p1, p2 = func(x); #Get output distribution parameters
@@ -73,9 +81,9 @@ def psus(func, d, t_star, n, p,
     vr = []
     C_F = []
     C = []
-    pF_exact_f = []
-    pF_exact_f_mean = []
-    pF_exact_f_var = []
+    pF_f = []
+    pF_f_mean = []
+    pF_f_var = []
 
     # Run loop
     while True: #n_F < n*p
@@ -97,32 +105,32 @@ def psus(func, d, t_star, n, p,
     
     
             bernoullis = [pba.bernoulli(float(p)) for p in p_excd_F if p > 1e-4] #Passing pun precision 
-            N_F_dist_f = bernoullis[0]
+            N_F_pbox = bernoullis[0]
             
             print(f'\tSumming {len(bernoullis)} distributions...', end='')
-            for b in bernoullis[1:]: #!!! BIG QUESTION - should we just sum the distributions that are in the level?
-                N_F_dist_f = N_F_dist_f.add(b, dependency='f')
+            for b in bernoullis[1:]: 
+                N_F_pbox = N_F_pbox.add(b, dependency='f')
                 
-            N_F_dist_f = N_F_dist_f/len(p_excd_F)
-            pF_exact_f.append(N_F_dist_f)
+            N_F_pbox = N_F_pbox/len(p_excd_F)
+            pF_f.append(N_F_pbox)
     
-            pF_exact_f_mean_pun = ival.I(np.mean(N_F_dist_f.left), np.mean(N_F_dist_f.right))
-            pF_exact_f_var_pun = var_bounds_pbox(N_F_dist_f)
+            pF_pbox_mean_pun = ival.I(np.mean(N_F_pbox.left), np.mean(N_F_pbox.right))
+            pF_pbox_var_pun = var_bounds_pbox(N_F_pbox)
     
-            pF_exact_f_mean_form, pF_exact_f_var_form = sum_distributions_frechet(bernoullis)
-            pF_exact_f_mean_form = pF_exact_f_mean_form/len(p_excd_F)
-            pF_exact_f_var_form = pF_exact_f_var_form/len(p_excd_F)**2
+            pF_pbox_mean_form, pF_pbox_var_form = sum_distributions_frechet(bernoullis)
+            pF_pbox_mean_form = pF_pbox_mean_form/len(p_excd_F)
+            pF_pbox_var_form = pF_pbox_var_form/len(p_excd_F)**2
             
-            pF_exact_f_mean.append(ival.imp(pF_exact_f_mean_pun, pF_exact_f_mean_form))
-            pF_exact_f_var.append(ival.imp(pF_exact_f_var_pun, pF_exact_f_var_form))
+            pF_f_mean.append(ival.imp(pF_pbox_mean_pun, pF_pbox_mean_form))
+            pF_f_var.append(ival.imp(pF_pbox_var_pun, pF_pbox_var_form))
             print('done!')
-            N_F_dist_f.plot()
+            N_F_pbox.plot()
             plt.title(f'Level {L} - final')
             
             # Fill in new data
             fill_out(info_out, L, x=x_sort, pars=par_sort, y=y_sort, u=uncert_sort,
                     n_gen=n_gen[L], ind_F=ind_F, p_star=p_excd_F, n_F=n_F,
-                    p_F_n=N_F_dist_f, mn_F=mn[L], vr_F=vr[L], C_F=C_F)
+                    p_F_n=N_F_pbox, mn_F=mn[L], vr_F=vr[L], C_F=C_F)
             break
         
         print('\n-----------------------------------')
@@ -145,26 +153,26 @@ def psus(func, d, t_star, n, p,
 
         bernoullis_Fi = [pba.bernoulli(float(p)) for p in p_in_Fi if p > 1e-4] #Passing pun precision
         print(f'\tNumber of steps in p-boxes: {bernoullis_Fi[0].steps}.')
-        N_Fi_dist_f = bernoullis_Fi[0]
+        N_Fi_pbox_f = bernoullis_Fi[0]
 
         print(f'\tSumming {len(bernoullis_Fi)} distributions...', end='')
         for b in bernoullis_Fi[1:]:
-            N_Fi_dist_f = N_Fi_dist_f.add(b, dependency='f')
+            N_Fi_pbox_f = N_Fi_pbox_f.add(b, dependency='f')
 
-        N_Fi_dist_f = N_Fi_dist_f/len(p_in_Fi)
-        pF_exact_f.append(N_Fi_dist_f)
+        N_Fi_pbox_f = N_Fi_pbox_f/len(p_in_Fi)
+        pF_f.append(N_Fi_pbox_f)
         
-        pF_exact_f_mean_pun_l = ival.I(np.mean(N_Fi_dist_f.left), np.mean(N_Fi_dist_f.right))
-        pF_exact_f_var_pun_l = var_bounds_pbox(N_Fi_dist_f)
+        pF_pbox_mean_pun_i = ival.I(np.mean(N_Fi_pbox_f.left), np.mean(N_Fi_pbox_f.right))
+        pF_pbox_var_pun_i = var_bounds_pbox(N_Fi_pbox_f)
 
-        pF_exact_f_mean_form_l, pF_exact_f_var_form_l = sum_distributions_frechet(bernoullis_Fi)
-        pF_exact_f_mean_form_l = pF_exact_f_mean_form_l/len(p_in_Fi)
-        pF_exact_f_var_form_l = pF_exact_f_var_form_l/len(p_in_Fi)**2
+        pF_pbox_mean_form_i, pF_pbox_var_form_i = sum_distributions_frechet(bernoullis_Fi)
+        pF_pbox_mean_form_i = pF_pbox_mean_form_i/len(p_in_Fi)
+        pF_pbox_var_form_i = pF_pbox_var_form_i/len(p_in_Fi)**2
         
-        pF_exact_f_mean.append(ival.imp(pF_exact_f_mean_pun_l, pF_exact_f_mean_form_l))
-        pF_exact_f_var.append(ival.imp(pF_exact_f_var_pun_l, pF_exact_f_var_form_l))
+        pF_f_mean.append(ival.imp(pF_pbox_mean_pun_i, pF_pbox_mean_form_i))
+        pF_f_var.append(ival.imp(pF_pbox_var_pun_i, pF_pbox_var_form_i))
         print('done!')
-        N_Fi_dist_f.plot()
+        N_Fi_pbox_f.plot()
         plt.title(f'Level {L}')
 
         # Choose seeds
@@ -183,7 +191,7 @@ def psus(func, d, t_star, n, p,
 
         # Fill in update
         fill_out(info_out, L, t_i=level, ind_Fi=ind_Fi, p_ij=p_in_Fi, n_C=n_pt[L],
-                 p_F_i = N_Fi_dist_f, mn=mn[L], vr=vr[L], C=C[L])
+                 p_F_i = N_Fi_pbox_f, mn=mn[L], vr=vr[L], C=C[L])
         
         
         # Use MMA to populate the conditional level
@@ -226,7 +234,7 @@ def psus(func, d, t_star, n, p,
         
     # Calculate probability of failure
     p_F = {}
-    p_F_f = {}
+    p_F_ipsus = {}
     print('\tFinal calculations')
     print('----------------------------')
     if not zero_prob:
@@ -242,27 +250,33 @@ def psus(func, d, t_star, n, p,
 
         # Maximal dependence
         C = [info_out[l]['p_Ci']['C'] for l in range(L)]
-        C.append(info_out[L]['p_Fi']['C'])
+        C.append(info_out[L]['p_F']['C'])
         C = np.array(C)
         p_F['Cvar'] = varindepprod(mn, C**2 * vr) / np.int64(np.prod(n_gen))**2 #Otherwise type == np.int32 and we get overflow
 
         #Frechet
-        print(f'Multiplying {len(pF_exact_f)} distributions...', end='')
-        p_f = pF_exact_f[0]
-        for p in pF_exact_f[1:]:
+        print(f'Multiplying {len(pF_f)} distributions...', end='')
+        p_f = pF_f[0]
+        for p in pF_f[1:]:
              p_f = p_f.mul(p, dependency='f')
         p_f.plot()
         plt.title('Product distribution - $p_F^{IP-SuS}$')
         print('done!')
         
-        p_F_f['bounds'] = p_f
-        
-        p_F_f_mean_pun = ival.I(np.mean(p_f.left), np.mean(p_f.right))
-        p_F_f_mean_form, p_F_f_var_form = product_distributions_frechet_samples(pF_exact_f)
-        p_F_f['mean'] = ival.imp(p_F_f_mean_pun, p_F_f_mean_form)
+        p_F_ipsus['bounds'] = p_f
+        print(p_f.lo)
+        print(p_f.hi)
+        # p_F_ipsus_mean_pun = ival.I(np.mean(p_f.left), np.mean(p_f.right))
+        # p_F_ipsus_mean_form, p_F_ipsus_var_form = product_distributions_frechet_samples(pF_f)
+        # p_F_ipsus['mean'] = ival.imp(p_F_ipsus_mean_pun, p_F_ipsus_mean_form)
 
-        p_F_f_var_pun = var_bounds_pbox(p_f)
-        p_F_f['var'] = ival.imp(p_F_f_var_pun, p_F_f_var_form)
+        # p_F_ipsus_var_pun = var_bounds_pbox(p_f)
+        # p_F_ipsus['var'] = ival.imp(p_F_ipsus_var_pun, p_F_ipsus_var_form)
+
+        p_F_ipsus_mean_pun = ival.I(np.mean(p_f.left), np.mean(p_f.right))
+        p_F_ipsus['mean'] = p_F_ipsus_mean_pun
+        p_F_ipsus_var_pun = var_bounds_pbox(p_f)
+        p_F_ipsus['var'] = p_F_ipsus_var_pun
 
     else:
         p_F['p_F'] = 0;
@@ -270,4 +284,4 @@ def psus(func, d, t_star, n, p,
         p_F['var'] = np.inf;
     
 
-    return p_F, p_F_f, info_out #, p_F_i, p_F_p, p_F_pqd, info_out, inp_par
+    return p_F, p_F_ipsus, info_out #, p_F_i, p_F_p, p_F_pqd, info_out, inp_par

@@ -107,7 +107,7 @@ def fill_out(out, L, **kwargs):
     
     if kwargs.get('mn_F'): #Avoid overwriting on update
         p_Fi = {'mn':kwargs.pop('mn_F'), 'vr':kwargs.pop('vr_F'), 'C':kwargs.pop('C_F')}    
-        out[L]['p_Fi'] = p_Fi #Moments of critical threshold exceedence RV
+        out[L]['p_F'] = p_Fi #Moments of critical threshold exceedence RV at the last level
     
     if kwargs.get('p_F_mean'):
         p_Fi = {'mn':kwargs.pop('p_F_mean'), 'vr':kwargs.pop('p_F_var')}
@@ -143,7 +143,7 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
         par2 = par2[:, np.newaxis]
 
 
-
+    dist_1 = [dist, dist]
     nS = int(np.ceil((nL - nC) / nC))  #Number of states per chain when keeping seeds 
     s = np.std(seeds[:, :, 0], axis=0, keepdims=True)  
     s = np.repeat(s, seeds.shape[0], axis=0)
@@ -162,7 +162,14 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
         
         pstar = proposal(seeds[:, :, k])  #Step for random walk
 
-        r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])  #Uniform pdfs 
+        # r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])  #Uniform pdfs 
+        r = np.zeros((nC, d))
+
+        for j in range(d):
+            r[:, j] = (
+            dist[j].pdf(pstar[:, j]) /
+            dist[j].pdf(seeds[:, j, k])
+        )
         accept = urand < r  #Acceptance criterion                      
         pA[k, :] = np.mean(accept, axis=0)  #Probability of acceptance
         zeta = seeds[:, :, k].copy()  #Copy to zeta
