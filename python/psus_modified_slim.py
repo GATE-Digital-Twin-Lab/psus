@@ -7,9 +7,10 @@ import Interval as ival
 
 import matplotlib.pyplot as plt
 
-def psus(func, d, t_star, n, p,
+def psus(func, d, t_star, n, p, 
          out_dist,
-         inp_dist = {'name':'uniform', 'parameters':[0,1]}):
+         inp_dist = {'name':'uniform', 'parameters':[0,1]},
+         plot = False):
     '''
     %%% Inputs:
     %%%     func    - single input function handle to the probabilistic code
@@ -124,8 +125,9 @@ def psus(func, d, t_star, n, p,
             pF_f_mean.append(ival.imp(pF_pbox_mean_pun, pF_pbox_mean_form))
             pF_f_var.append(ival.imp(pF_pbox_var_pun, pF_pbox_var_form))
             print('done!')
-            N_F_pbox.plot()
-            plt.title(f'Level {L} - final')
+            if plot:
+                N_F_pbox.plot()
+                plt.title(f'Level {L} - final')
             
             # Fill in new data
             fill_out(info_out, L, x=x_sort, pars=par_sort, y=y_sort, u=uncert_sort,
@@ -172,8 +174,9 @@ def psus(func, d, t_star, n, p,
         pF_f_mean.append(ival.imp(pF_pbox_mean_pun_i, pF_pbox_mean_form_i))
         pF_f_var.append(ival.imp(pF_pbox_var_pun_i, pF_pbox_var_form_i))
         print('done!')
-        N_Fi_pbox_f.plot()
-        plt.title(f'Level {L}')
+        if plot:
+            N_Fi_pbox_f.plot()
+            plt.title(f'Level {L}')
 
         # Choose seeds
         print('\tChoosing seeds...', end='')
