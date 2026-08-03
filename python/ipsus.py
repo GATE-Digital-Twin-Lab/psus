@@ -46,14 +46,12 @@ def psus(func, d, t_star, n, p,
     p0N = int(p*n) #Target number of seeds
     
     # PREPARE INPUTS
-    # dist_obj = getattr(sts, inp_dist['name'])(*inp_dist['parameters'])
     dist_obj = [
     getattr(sts, dist_info['name'])(*dist_info['parameters'])
     for dist_info in inp_dist
     ]
     
     # Sample the input
-    # x = dist_obj.rvs((n,d))
     x = np.column_stack([
     dist_obj[j].rvs(size=n)
     for j in range(d)
@@ -69,8 +67,6 @@ def psus(func, d, t_star, n, p,
     [x_sort, par_sort, y_sort, uncert_sort] = psort(out_dist,[p1,p2],x,50);
     
     # Output
-    # inp_par = {'func':func,'outdist':out_dist,'dim':d,'t_star':t_star,
-    #               'p_0':p,'N':n}
     info_out = [{}]
     
     # Set loop
@@ -287,4 +283,4 @@ def psus(func, d, t_star, n, p,
         p_F['var'] = np.inf;
     
 
-    return p_F, p_F_ipsus, info_out #, p_F_i, p_F_p, p_F_pqd, info_out, inp_par
+    return p_F, p_F_ipsus, info_out 

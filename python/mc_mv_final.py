@@ -304,10 +304,6 @@ def product_distributions_frechet_samples(distributions, n_samples=10_000):
         mean_product = ival.env(lower_mean, upper_mean)
 
         #Monte Carlo sampling
-        # EX_samples = np.random.uniform(EX.leftval, EX.rightval, n_samples)
-        # VX_samples = np.random.uniform(VX.leftval, VX.rightval, n_samples)
-        # EY_samples = np.random.uniform(EY.leftval, EY.rightval, n_samples)
-        # VY_samples = np.random.uniform(VY.leftval, VY.rightval, n_samples)
         EX_samples, VX_samples = sample_EX_VX(first_dist, n_samples)
         EY_samples, VY_samples = sample_EX_VX(dist, n_samples)
 
@@ -326,7 +322,6 @@ def product_distributions_frechet_samples(distributions, n_samples=10_000):
 
         #Approximate higher moments
         # Estimate V[X²]
-        # EX_samples, VX_samples = sample_EX_VX(first_dist, n_samples)
         VZ = rowevar_from_samples(
             first_dist,
             lambda x: x**2,
@@ -336,7 +331,6 @@ def product_distributions_frechet_samples(distributions, n_samples=10_000):
         )
 
         # Estimate V[Y²]
-        # EY_samples, VY_samples = sample_EX_VX(dist, n_samples)
         VW = rowevar_from_samples(
             dist,
             lambda x: x**2,

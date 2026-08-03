@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats as sts
-from psus_modified_slim import psus
+from python.ipsus import psus
 import matplotlib.pyplot as plt
 
 def rp_objective(x, problem):
@@ -174,30 +174,5 @@ def RP301(x):
   
     return -g    
 
-def monte_carlo_pf_fast(N=100000):
 
-    # X1 ~ Uniform(70, 80)
-    X1 = np.random.uniform(70, 80, N)
-
-    # X2 ~ Normal(39, 0.1)
-    X2 = np.random.normal(39, 0.1, N)
-
-    # X3 ~ Gumbel_R (loc=1342, scale=272.9)
-    X3 = np.random.gumbel(1342.0, 272.9, N)
-    
-    # X4 ~ Normal(400, 0.1)
-    X4 = np.random.normal(400, 0.1, N)
-
-    # X5 ~ Normal(250000, 35000)
-    X5 = np.random.normal(250000.0, 35000.0, N)
-
-    # Limit state function
-    g = (
-        X1
-        - 32 / (np.pi * X2 ** 3)
-        * np.sqrt((X3 ** 2 * X4 ** 2) / 16 + X5 ** 2)
-    )
-
-    pf = np.mean(g < 0)
-    return pf
 

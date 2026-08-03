@@ -1,6 +1,6 @@
 import pickle
 import os
-from psus_modified_slim import psus
+from python.ipsus import psus
 import Interval as ival
 
 #%%

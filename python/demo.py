@@ -15,7 +15,7 @@ import pickle
 
 from pnm_surrogate import (generate_uncertainty, vectorise_uncertainty,
                           plot_uncertainty, branin, branin_uncert)
-from psus_modified_slim import psus
+from python.ipsus import psus
 
 #%% Test the PNM surrogate functionality on random numbers
 f = -1 + 10*np.random.rand(50)
