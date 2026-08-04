@@ -15,48 +15,48 @@ uq.rng(100,'twister');
 
 ModelOpts = { 
     'Type': 'Model', 
-    'ModelFun': 'local_RP.RP14', #Not sure if this is supposed to work
+    'ModelFun': 'local_RP.RP111', #Not sure if this is supposed to work
     'isVectorized': 1
 }
 myModel = uq.createModel(ModelOpts)
 
-# InputOpts = {
-#     "Marginals": [
-#         {"Name": "x1",               # Resistance
-#          "Type": "Gaussian",
-#          "Parameters": [0 , 1]
-#         },
-#         {"Name": "x2",               # Stress
-#          "Type": "Gaussian",
-#          "Moments": [0 , 1]
-#         }
-#     ]
-# }
-
 InputOpts = {
     "Marginals": [
         {"Name": "x1",               # Resistance
-         "Type": "Uniform",
-         "Parameters": [70 , 80]
+         "Type": "Gaussian",
+         "Parameters": [0 , 1]
         },
         {"Name": "x2",               # Stress
          "Type": "Gaussian",
-         "Moments": [39 , 0.1]
-        },
-        {"Name": "x3",               # Stress
-         "Type": "Gumbel",
-         "Parameters": [1342, 272.9]
-        },
-        {"Name": "x4",               # Stress
-         "Type": "Gaussian",
-         "Moments": [400, 0.1]
-        },
-        {"Name": "x5",               # Stress
-         "Type": "Gaussian",
-         "Moments": [250_000, 35_000]
-        },
+         "Moments": [0 , 1]
+        }
     ]
 }
+
+# InputOpts = {
+#     "Marginals": [
+#         {"Name": "x1",               # Resistance
+#          "Type": "Uniform",
+#          "Parameters": [70 , 80]
+#         },
+#         {"Name": "x2",               # Stress
+#          "Type": "Gaussian",
+#          "Moments": [39 , 0.1]
+#         },
+#         {"Name": "x3",               # Stress
+#          "Type": "Gumbel",
+#          "Parameters": [1342, 272.9]
+#         },
+#         {"Name": "x4",               # Stress
+#          "Type": "Gaussian",
+#          "Moments": [400, 0.1]
+#         },
+#         {"Name": "x5",               # Stress
+#          "Type": "Gaussian",
+#          "Moments": [250_000, 35_000]
+#         },
+#     ]
+# }
 
 myInput = uq.createInput(InputOpts)
 

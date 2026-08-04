@@ -217,14 +217,17 @@ print(f"Number of intervals that failed to capture the true p_F: {out}")
 
 #%%
 from RPrepo import*
-d = 2
+d = 5
 t_star = 0
 N = 1000
 p0 = 0.1
 out_d = 'norm'
-inp_d = [   
-    {'name': 'norm',    'parameters': [0, 1]},        
-    {'name': 'norm',    'parameters': [0, 1]}
+inp_d = [
+    {'name': 'uniform', 'parameters': [70, 10]},          
+    {'name': 'norm',    'parameters': [39, 0.1]},         
+    {'name': 'gumbel_r','parameters': [1342.0, 272.9]},   
+    {'name': 'norm',    'parameters': [400, 0.1]},        
+    {'name': 'norm',    'parameters': [250000.0, 35000.0]}
 ]
 
 # Assuming RP14 is defined or imported in your environment
