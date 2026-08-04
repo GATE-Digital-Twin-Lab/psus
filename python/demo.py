@@ -75,7 +75,7 @@ plt.show()
  
 
 
-#%% Set up Branin
+#%% Set up P-SuS test with Branin
 d = 2
 t_star = 230
 N = 1000
@@ -102,13 +102,14 @@ for s in std:
     print(f"Iteration for sd = {s} completed.")
 
 p_F_values = np.array([pf["p_F"] for pf in p_F_list])
-#%% Prints
+
+# Prints
 print("============== P-SuS ===============")
 print("Probability of failure, p_F:", p_F_values)
 print("\n============== Monte Carlo ===============")
 print("Probability of failure, p_F_MC:", p_F_MC)
 
-
+#%% Set up P-SuS test with a toy function
 
 def tiny_pf_func(x):
     # x in [0,1]^d
