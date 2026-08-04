@@ -107,7 +107,11 @@ def fill_out(out, L, **kwargs):
     
     if kwargs.get('mn_F'): #Avoid overwriting on update
         p_Fi = {'mn':kwargs.pop('mn_F'), 'vr':kwargs.pop('vr_F'), 'C':kwargs.pop('C_F')}    
-        out[L]['p_Fi'] = p_Fi #Moments of critical threshold exceedence RV
+        out[L]['p_F'] = p_Fi #Moments of critical threshold exceedence RV at the last level
+    
+    if kwargs.get('p_F_mean'):
+        p_Fi = {'mn':kwargs.pop('p_F_mean'), 'vr':kwargs.pop('p_F_var')}
+        out[L]['p_Fi_imprecise'] = p_Fi
         
     for arg, val in kwargs.items():
         if val is not None:
@@ -139,7 +143,7 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
         par2 = par2[:, np.newaxis]
 
 
-
+    dist_1 = [dist, dist]
     nS = int(np.ceil((nL - nC) / nC))  #Number of states per chain when keeping seeds 
     s = np.std(seeds[:, :, 0], axis=0, keepdims=True)  
     s = np.repeat(s, seeds.shape[0], axis=0)
@@ -158,7 +162,14 @@ def pmma(propFunc, excdFunc, dist, func, d, seeds, par1, par2, level, nL, nC):
         
         pstar = proposal(seeds[:, :, k])  #Step for random walk
 
-        r = dist.pdf(pstar) / dist.pdf(seeds[:, :, k])  #Uniform pdfs 
+        #Uniform pdfs 
+        r = np.zeros((nC, d))
+
+        for j in range(d):
+            r[:, j] = (
+            dist[j].pdf(pstar[:, j]) /
+            dist[j].pdf(seeds[:, j, k])
+        )
         accept = urand < r  #Acceptance criterion                      
         pA[k, :] = np.mean(accept, axis=0)  #Probability of acceptance
         zeta = seeds[:, :, k].copy()  #Copy to zeta
@@ -273,10 +284,8 @@ def psus(func, d, t_star, n, p,
     # Output
     inp_par = {'func':func,'outdist':out_dist,'dim':d,'t_star':t_star,
                   'p_0':p,'N':n}
-    # info_out = [{'x':[],'y':[],'u':[],'pars':[],'ind_F':[],'ind_Fi':[],'t_i':[],
-    # 	'p_star':[],'p_ij':[],'N_i':[],'N_C':[],'p_Ci':[],'N_F':[],'p_Fi':[]}]
     info_out = [{}]
-    # info_out = []
+    
     
     # Set loop
     L = 0; #Conditional Level
@@ -290,7 +299,6 @@ def psus(func, d, t_star, n, p,
     # Run loop
     while True: #n_F < n*p
         # Record failure
-        # p_excd_F = excd_fun(par_sort,t_star); #Probability of exceeding threshold
         p_excd_F = excd_fun(par_sort[:,0], par_sort[:,1], t_star)
         ind_F = logc_acc(p_excd_F);
         n_F = np.sum(ind_F);
@@ -313,7 +321,7 @@ def psus(func, d, t_star, n, p,
         level = y_sort[p0N];
 
         # Next level probabilities
-        # p_in_Fi = excd_fun(par_sort, level); #Probability of exceedance
+        #Probability of exceedance
         p_in_Fi = excd_fun(par_sort[:,0], par_sort[:,1], level)
 
         # Counting distribution moments
