@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats as sts
-from python.ipsus import psus
+from ipsus import psus
 import matplotlib.pyplot as plt
 
 def rp_objective(x, problem):
