@@ -53,7 +53,7 @@ def rowe_t_from_samples(dist, t, EX_samples, VX_samples):
     L_interval = ival.I(min(L_samples), max(L_samples))
     R_interval = ival.I(min(R_samples), max(R_samples))
 
-    return ival.env(L_interval, R_interval)
+    return ival.envelope(L_interval, R_interval)
 
 def rowevar_from_samples(dist, t, t_inv, EX_samples, VX_samples):
 
@@ -95,7 +95,7 @@ def rowevar_from_samples(dist, t, t_inv, EX_samples, VX_samples):
     L_interval = ival.I(min(L_samples), max(L_samples))
     R_interval = ival.I(min(R_samples), max(R_samples))
 
-    return ival.env(L_interval, R_interval)
+    return ival.envelope(L_interval, R_interval)
 
 
 def sum_distributions_frechet(distributions): 
@@ -123,7 +123,7 @@ def sum_distributions_frechet(distributions):
         EX = EX + EY
 
         # Update table var
-        VX = ival.env(ival.sqrt(VX) - ival.sqrt(VY), ival.sqrt(VX) + ival.sqrt(VY))**2
+        VX = ival.envelope(ival.sqrt(VX) - ival.sqrt(VY), ival.sqrt(VX) + ival.sqrt(VY))**2
 
     return EX, VX 
 
@@ -143,7 +143,7 @@ def product_distributions_frechet(distributions, n_samples=100000):
         #Mean of product (Fréchet bounds)
         lower_mean = EX * EY - ival.sqrt(VX * VY)
         upper_mean = EX * EY + ival.sqrt(VX * VY)
-        mean_product = ival.env(lower_mean, upper_mean)
+        mean_product = ival.envelope(lower_mean, upper_mean)
 
         #Second moments
         EX2 = EX**2 + VX
@@ -176,17 +176,17 @@ def product_distributions_frechet(distributions, n_samples=100000):
         # E[X²Y]
         lower = EX2 * EY - ival.sqrt(VZ * VY)
         upper = EX2 * EY + ival.sqrt(VZ * VY)
-        EX2Y = ival.env(lower, upper)
+        EX2Y = ival.envelope(lower, upper)
         
         # E[XY²]
         lower = EX * EY2 - ival.sqrt(VX * VW)
         upper = EX * EY2 + ival.sqrt(VX * VW)
-        EXY2 = ival.env(lower, upper)
+        EXY2 = ival.envelope(lower, upper)
 
         # E[X²Y²]
         lower = EX2 * EY2 - ival.sqrt(VZ * VW)
         upper = EX2 * EY2 + ival.sqrt(VZ * VW)
-        EX2Y2 = ival.env(lower, upper)
+        EX2Y2 = ival.envelope(lower, upper)
 
         #Higher moments
         E11 = mean_product - EX * EY
@@ -301,7 +301,7 @@ def product_distributions_frechet_samples(distributions, n_samples=10_000):
         lower_mean = EXEY - sqrt_term
         upper_mean = EXEY + sqrt_term
 
-        mean_product = ival.env(lower_mean, upper_mean)
+        mean_product = ival.envelope(lower_mean, upper_mean)
 
         #Monte Carlo sampling
         EX_samples, VX_samples = sample_EX_VX(first_dist, n_samples)
